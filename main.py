@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import math
+import statistics as stats
 
 # FUNCTIONS
 def guess_centroid(list1, list2):
@@ -15,8 +16,16 @@ def calc_dist(p1, p2):
     return(abs(math.sqrt( (p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)))
 
 
-def assign_cluster(centroid_list, x_list, y_list):
-    cluster_dict = {0:[], 1:[], 2:[], 3:[]}
+def assign_cluster(x_list, y_list, centroid_list = None):
+    if centroid_list is None:
+        centroid_list = guess_centroid(x_list, y_list)
+
+    # MAKE CLUSTER DICT FOR ANY LENGTH
+    cluster_dict = {}
+    for val in range(len(centroid_list)):
+        cluster_dict[val] = []
+
+    # FIND DISTANCE AND CALCULATE WHERE EACH CENTROID IS AND ASSIGN EVERY POINT TO KEY IN DICT
     for i in range(len(x_list)):
         point = (x_list[i], y_list[i])
         dist_list = []
@@ -26,16 +35,39 @@ def assign_cluster(centroid_list, x_list, y_list):
         for entry in dist_list:
             i2 += 1
             if entry == min(dist_list):
-                cluster_dict[i2] = point
-    print(cluster_dict)
+                cluster_dict[i2].append([point[0], point[1]])
+    return cluster_dict
+
+
+def plot_centroids(dict, centroids = None):
+    for key in dict:
+        x_list = []
+        y_list = []
+        for val in dict[key]:
+            x_list.append(val[0])
+            y_list.append(val[1])
+        plt.scatter(x_list, y_list)
+    if centroids != None:
+        for point in centroids:
+            print(point)
+            plt.plot([point[0]], [point[1]], 'k', marker='D')
+    plt.show()
+
+
+def calc_centroid(dict):
+    centroid_coord = []
+    for key in dict:
+        x_list = []
+        y_list = []
+        for val in dict[key]:
+            x_list.append(val[0])
+            y_list.append(val[1])
+        centroid_coord.append([stats.mean(x_list), stats.mean(y_list)])
+    return(centroid_coord)
 
 
 
-
-
-
-
-
+#############################################################################
 # Create and change column names in Dataframe
 driver_df = pd.read_csv('data.txt', delim_whitespace=True)
 driver_df.columns = ['id', 'dist', 'speed']
@@ -52,9 +84,16 @@ driver_df['norm speed'] = (driver_df.speed - driver_df.speed.mean())/driver_df.s
 normdist_list = driver_df['norm dist'].values.tolist()
 normspeed_list = driver_df['norm speed'].values.tolist()
 
-# print(normdist_list, normspeed_list)
 
-# (-.5, .5), (-.5, 1.5), (2, 0), (2,4)
-assign_cluster(guess_centroid(normdist_list, normspeed_list), normdist_list, normspeed_list)
+# (-.5, .5), (-.5, 1.5), (2, 0), (2,4), (1, 3)
+def main(rep):
+    cluster_dict = assign_cluster(normdist_list, normspeed_list, guess_centroid(normdist_list, normspeed_list))
+    cent_coord = calc_centroid(cluster_dict)
+    plot_centroids(cluster_dict, cent_coord)
+    for i in range(rep):
+        cluster_dict = assign_cluster(normdist_list, normspeed_list, cent_coord)
+        cent_coord = calc_centroid(cluster_dict)
+        plot_centroids(cluster_dict, cent_coord)
 
+main(4)
 
